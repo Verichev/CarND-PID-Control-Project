@@ -1,8 +1,6 @@
 # CarND-Controls-PID
 Self-Driving Car Engineer Nanodegree Program
 
----
-
 ## Dependencies
 
 * cmake >= 3.5
