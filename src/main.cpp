@@ -9,6 +9,8 @@
 using nlohmann::json;
 using std::string;
 
+const int cycles = 25000;
+
 // For converting back and forth between radians and degrees.
 constexpr double pi() { return M_PI; }
 double deg2rad(double x) { return x * pi() / 180; }
@@ -30,61 +32,83 @@ string hasData(string s) {
   return "";
 }
 
-int main() {
+void restart(uWS::WebSocket<uWS::SERVER> ws) {
+  std::string reset_msg = "42[\"reset\",{}]";
+  ws.send(reset_msg.data(), reset_msg.length(), uWS::OpCode::TEXT);
+}
+
+int main(int argc, char *argv[]) {
   uWS::Hub h;
-
+  int iteration = 0;
+  int low_speed_counter = 0;
+  double init_Kp = atof(argv[1]);
+  double init_Ki = atof(argv[2]);
+  double init_Kd = atof(argv[3]);
+  
   PID pid;
-  /**
-   * TODO: Initialize the pid variable.
-   */
+  pid.Init(init_Kp, init_Ki, init_Kd);
 
-  h.onMessage([&pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, 
+  h.onMessage([&pid, &iteration, &low_speed_counter](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                      uWS::OpCode opCode) {
-    // "42" at the start of the message means there's a websocket message event.
-    // The 4 signifies a websocket message
-    // The 2 signifies a websocket event
-    if (length && length > 2 && data[0] == '4' && data[1] == '2') {
-      auto s = hasData(string(data).substr(0, length));
+    iteration++;
+    if (iteration == 1) {
+      restart(ws); //restart in first cycle
+    } else if (iteration > cycles) { //if cycles are completed restart and close socket
+      std::cout << pid.AccumError() << std::endl;;
+      restart(ws);
+      ws.close();
+    } else {
+      // "42" at the start of the message means there's a websocket message event.
+      // The 4 signifies a websocket message
+      // The 2 signifies a websocket event
+      if (length && length > 2 && data[0] == '4' && data[1] == '2') {
+        auto s = hasData(string(data).substr(0, length));
 
-      if (s != "") {
-        auto j = json::parse(s);
+        if (s != "") {
+          auto j = json::parse(s);
 
-        string event = j[0].get<string>();
+          string event = j[0].get<string>();
 
-        if (event == "telemetry") {
-          // j[1] is the data JSON object
-          double cte = std::stod(j[1]["cte"].get<string>());
-          double speed = std::stod(j[1]["speed"].get<string>());
-          double angle = std::stod(j[1]["steering_angle"].get<string>());
-          double steer_value;
-          /**
-           * TODO: Calculate steering value here, remember the steering value is
-           *   [-1, 1].
-           * NOTE: Feel free to play around with the throttle and speed.
-           *   Maybe use another PID controller to control the speed!
-           */
-          
-          // DEBUG
-          std::cout << "CTE: " << cte << " Steering Value: " << steer_value 
-                    << std::endl;
+          if (event == "telemetry") {
+            // j[1] is the data JSON object
+            double cte = std::stod(j[1]["cte"].get<string>());
+            double speed = std::stod(j[1]["speed"].get<string>());
+            double angle = std::stod(j[1]["steering_angle"].get<string>());
+            double steer_value;
+            
+            if (speed < 5) { //checking if our vehicle stuck in this cycle
+              low_speed_counter++;
+            } else {
+              low_speed_counter = 0;
+            }
+            if (low_speed_counter > 400) { //if vehicle stuck, restart simulator and close the programm
+              std::cout << pid.AccumError() + (cycles - iteration) * cte * cte  << std::endl; //adding to accum error the left cycles with current cte
+              restart(ws);
+              ws.close();
+              return;
+            }
+            pid.UpdateError(cte);
+            
+            steer_value = pid.TotalError();
 
-          json msgJson;
-          msgJson["steering_angle"] = steer_value;
-          msgJson["throttle"] = 0.3;
-          auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
+            json msgJson;
+            msgJson["steering_angle"] = steer_value;
+            msgJson["throttle"] = (speed > 20) ? 0.2 : 0.3; //for keeping speed around 20 MPH
+            auto msg = "42[\"steer\"," + msgJson.dump() + "]";
+            //std::cout << msg << std::endl;
+            ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
+          }  // end "telemetry" if
+        } else {
+          // Manual driving
+          string msg = "42[\"manual\",{}]";
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
-        }  // end "telemetry" if
-      } else {
-        // Manual driving
-        string msg = "42[\"manual\",{}]";
-        ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
-      }
-    }  // end websocket message if
+        }
+      }  // end websocket message if
+    }
   }); // end h.onMessage
 
   h.onConnection([&h](uWS::WebSocket<uWS::SERVER> ws, uWS::HttpRequest req) {
-    std::cout << "Connected!!!" << std::endl;
+    //std::cout << "Connected!!!" << std::endl;
   });
 
   h.onDisconnection([&h](uWS::WebSocket<uWS::SERVER> ws, int code, 
@@ -95,11 +119,10 @@ int main() {
 
   int port = 4567;
   if (h.listen(port)) {
-    std::cout << "Listening to port " << port << std::endl;
+//    std::cout << "Listening to port " << port << std::endl;
   } else {
     std::cerr << "Failed to listen to port" << std::endl;
     return -1;
   }
-  
   h.run();
 }

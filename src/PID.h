@@ -7,12 +7,12 @@ class PID {
    * Constructor
    */
   PID();
-
+  
   /**
    * Destructor.
    */
   virtual ~PID();
-
+  
   /**
    * Initialize PID.
    * @param (Kp_, Ki_, Kd_) The initial PID coefficients
@@ -30,7 +30,9 @@ class PID {
    * @output The total PID error
    */
   double TotalError();
-
+  
+  double AccumError();
+  
  private:
   /**
    * PID Errors
@@ -38,6 +40,7 @@ class PID {
   double p_error;
   double i_error;
   double d_error;
+  double squared_sum_cte;
 
   /**
    * PID Coefficients
