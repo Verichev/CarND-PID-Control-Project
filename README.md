@@ -3,9 +3,6 @@ Self-Driving Car Engineer Nanodegree Program
 
 ---
 
-[![Watch the result video](https://github.com/Verichev/CarND-PID-Control-Project/blob/master/pid_controller.mp4)]
-
-
 ## Dependencies
 
 * cmake >= 3.5
