@@ -37,62 +37,36 @@ Fellow students have put together a guide to Windows set-up for the project [her
 
 Tips for setting up your environment can be found [here](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/f758c44c-5e40-4e01-93b5-1a82aa4e044f/concepts/23d376c7-0195-4276-bdf0-e02f1f3c665d)
 
-## Editor Settings
+## Reflection
 
-We've purposefully kept editor configuration files out of this repo in order to
-keep it as simple and environment agnostic as possible. However, we recommend
-using the following settings:
+PID - controller is responsable for smooth, reactive and safe contoller, that consists of three components:
+P - proportional, the component that is proportional to the current CTE. Helps to return back on track.
+I - integral, the component that accumulates the CTE error, and incorporates it in the controller, to mitigate the systimatic error, that is included in vehicle itself.
+D - derivative, the component, proportional to derivative of CTE, helps to smooth the path, avoid oscillation.
+All this components have it's coefficients, that can be adjusted. That is the main goal of this project.
 
-* indent using spaces
-* set tab width to 2 spaces (keeps the matrices in source code aligned)
+The c++ programm that sends to simulator respective to CTE steering and throttle values reworked to incorporate the PID parameters, that are passed as arguments to the programm.
 
-## Code Style
+Also along with implementing PID components in steering value in PID class, I also accumulate all path error, and after the programm finished return it to stdout. 
 
-Please (do your best to) stick to [Google's C++ style guide](https://google.github.io/styleguide/cppguide.html).
+The application has maximum of cycles that can be used to evaluate the accumulated error. If the vehicle gets stuck in the way. The programm adds the remained cte to the accumulated error, restarts the simulator and close the socket. This is needed to run the programm many times from external process with output of accumulated error.
 
-## Project Instructions and Rubric
+In root projects used python script with twidder algorithm, which is using different trying to find optimal PID paramters, evaluating the accumulated error through our built C++ programm. To save time it's better to evaluate the error starting from small quantity of cycles, than increasing it, while program is finding pretty good parameters for the current path.
 
-Note: regardless of the changes you make, your project must be buildable using
-cmake and make!
+## Results
+The results are not so determinant as for more simple simulators, they are dependent on the speed of the vehicle, the time of socket response and the phisics of implementation of the simulator itself, so twiddle cannot find the absolute best solution, but there is a correlation between the optimal parameters and minimal accumulated error. I guess in big project makes sense to to use data provided by twiddle and use regression technics to find the best paramters based on provided data. 
+params:  [2.4733010137467275, -0.7290000000000001, 13.417216854917202]
+err:  707883.0
+params:  [2.4733010137467275, 0.0, 14.308216854917202]
+err:  612.704
+params:  [2.4733010137467275, 0.0, 12.526216854917202]
+err:  472.658
+params:  [3.4534010137467277, 0.0, 13.417216854917202]
+err:  641155.0
+params:  [1.4932010137467273, 0.0, 13.417216854917202]
+err:  551.43
 
-More information is only accessible by people who are already enrolled in Term 2
-of CarND. If you are enrolled, see [the project page](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/f1820894-8322-4bb3-81aa-b26b3c6dcbaf/lessons/e8235395-22dd-4b87-88e0-d108c5e5bbf4/concepts/6a4d8d42-6a04-4aa6-b284-1697c0fd6562)
-for instructions and the project rubric.
+For our case, I picked the paramters with minimal evaluated error.
 
-## Hints!
-
-* You don't have to follow this directory structure, but if you do, your work
-  will span all of the .cpp files here. Keep an eye out for TODOs.
-
-## Call for IDE Profiles Pull Requests
-
-Help your fellow students!
-
-We decided to create Makefiles with cmake to keep this project as platform
-agnostic as possible. Similarly, we omitted IDE profiles in order to we ensure
-that students don't feel pressured to use one IDE or another.
-
-However! I'd love to help people get up and running with their IDEs of choice.
-If you've created a profile for an IDE that you think other students would
-appreciate, we'd love to have you add the requisite profile files and
-instructions to ide_profiles/. For example if you wanted to add a VS Code
-profile, you'd add:
-
-* /ide_profiles/vscode/.vscode
-* /ide_profiles/vscode/README.md
-
-The README should explain what the profile does, how to take advantage of it,
-and how to install it.
-
-Frankly, I've never been involved in a project with multiple IDE profiles
-before. I believe the best way to handle this would be to keep them out of the
-repo root to avoid clutter. My expectation is that most profiles will include
-instructions to copy files to a new location to get picked up by the IDE, but
-that's just a guess.
-
-One last note here: regardless of the IDE used, every submitted project must
-still be compilable with cmake and make./
-
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
-
+err:  441.756
+params:  [2.473301013746727, 0.0, 12.317216854917202]
