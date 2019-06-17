@@ -41,10 +41,16 @@ int main(int argc, char *argv[]) {
   uWS::Hub h;
   int iteration = 0;
   int low_speed_counter = 0;
-  double init_Kp = atof(argv[1]);
-  double init_Ki = atof(argv[2]);
-  double init_Kd = atof(argv[3]);
-  
+  double init_Kp, init_Ki,init_Kd;
+  if (argc == 3) {
+    init_Kp = atof(argv[1]);
+    init_Ki = atof(argv[2]);
+    init_Kd = atof(argv[3]);
+  } else {
+    init_Kp = 2.473301013746727;
+    init_Ki = 0.0;
+    init_Kd = 12.317216854917202;
+  }
   PID pid;
   pid.Init(init_Kp, init_Ki, init_Kd);
 
